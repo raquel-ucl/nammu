@@ -124,7 +124,7 @@ class NammuController(object):
                 atfFile = fileChooser.getSelectedFile()
                 filename = atfFile.getCanonicalPath()
                 atfText = self.readTextFile(filename)
-                self.currentFilename = atfFile.getCanonicalPath()
+                self.currentFilename = filename
                 self.atfAreaController.setAtfAreaText(atfText)
 
             # TODO: Else, prompt user to choose again before closing
@@ -361,31 +361,38 @@ class NammuController(object):
         # Wait for server to prepare response
         self.log("        Request sent OK with ID " + server_id + "\n")
         self.log("        Waiting for server to prepare response... ")
-        client.wait_for_response(server_id)
-        self.log("OK\n")
-        self.log("        Fetching response... ")
+        ready = client.wait_for_response(server_id)
+        if ready:
+            self.log("OK\n")
+            self.log("        Fetching response... ")
 
-        # Send new request to fetch results and server logs
-        # This shouldn't need a new client, but a new request inside the same client
-        client = SOAPClient(url, method='POST')
-        client.create_request(keys=[server_id])
-        client.send()
-        response = client.get_response()
-        self.log(" OK\n")
-        self.log("        Reading response... ")
-        oracc_log, request_log, autolem = client.get_server_logs()
-        self.log(" OK\n")
+            # Send new request to fetch results and server logs
+            # This shouldn't need a new client, but a new request inside the same client
+            client = SOAPClient(url, method='POST')
+            client.create_request(keys=[server_id])
+            client.send()
+            response = client.get_response()
+            self.log(" OK\n")
+            self.log("        Reading response... ")
+            oracc_log, request_log, autolem = client.get_server_logs()
+            self.log(" OK\n")
 
-        if autolem:
-            self.atfAreaController.setAtfAreaText(autolem)
-            self.log("        Lemmatised ATF received from server.\n")
+            print "\n" + "*"*30
+            print self.currentFilename, oracc_log
+            print "*"*30 + "\n"
 
-        if oracc_log:
-            validation_errors = self.get_validation_errors(oracc_log)
-            self.atfAreaController.view.error_highlight(validation_errors)
-            self.log("        See highlighted areas in the text for errors and check again.\n\n")
+            if autolem:
+                self.atfAreaController.setAtfAreaText(autolem)
+                self.log("        Lemmatised ATF received from server.\n")
+
+            if oracc_log:
+                validation_errors = self.get_validation_errors(oracc_log)
+                self.atfAreaController.view.error_highlight(validation_errors)
+                self.log("        See highlighted areas in the text for errors and check again.\n\n")
+            else:
+                self.log("        The ORACC server didn't report any validation errors.\n\n")
         else:
-            self.log("        The ORACC server didn't report any validation errors.\n\n")
+            self.log("        The ORACC server returned and error status and can't validate now.\n\n")
 
     def get_validation_errors(self, oracc_log):
         """

@@ -62,7 +62,9 @@ class SOAPClient(object):
         while True:
             ready_response = requests.get('http://oracc.museum.upenn.edu/p/' + id)
             if ready_response.text == "done\n":
-                return
+                return True
+            if ready_response.text == "err_stat\n":
+                return False
 
     def get_response(self):
         return self.response.content
