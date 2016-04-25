@@ -60,7 +60,11 @@ class SOAPClient(object):
         Check for a response to the request and obtain response zip file.
         """
         while True:
-            ready_response = requests.get('http://oracc.museum.upenn.edu/p/' + id)
+            url = "http://oracc.museum.upenn.edu/p/" + id
+            try:
+                ready_response = requests.get(url, timeout=5)
+            except Timeout:
+                return False
             if ready_response.text == "done\n":
                 return True
             if ready_response.text == "err_stat\n":
