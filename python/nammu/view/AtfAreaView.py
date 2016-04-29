@@ -67,7 +67,7 @@ class AtfAreaView(JPanel):
 
         # Syntax highlight setup
         sc = StyleContext.getDefaultStyleContext()
-        self.setup_syntax_highlight_colours()
+        self.colorlut = self.create_syntax_highlight_colorlut()
         self.colors = {}
         for color in self.colorlut:
             self.colors[color] = sc.addAttribute(
@@ -169,34 +169,39 @@ class AtfAreaView(JPanel):
                                                      True)
 
 
-    def setup_syntax_highlight_colours(self):
+    def create_syntax_highlight_colorlut(self):
+        """
+        Returns color lookup table for syntax highlighting.
+        """
         # Syntax highlighting colors based on SOLARIZED
-        self.colorlut = {}
+        colorlut = {}
 
         # Black backgroud tones
-        self.colorlut['base03'] = (0, 43, 54)
-        self.colorlut['base02'] = (7, 54, 66)
+        colorlut['base03'] = (0, 43, 54)
+        colorlut['base02'] = (7, 54, 66)
 
         # Content tones
-        self.colorlut['base01'] = (88, 110, 117)
-        self.colorlut['base00'] = (101, 123, 131)
-        self.colorlut['base0'] = (131, 148, 150)
-        self.colorlut['base1'] = (147, 161, 161)
+        colorlut['base01'] = (88, 110, 117)
+        colorlut['base00'] = (101, 123, 131)
+        colorlut['base0'] = (131, 148, 150)
+        colorlut['base1'] = (147, 161, 161)
 
         # White background tones
-        self.colorlut['base2'] = (238, 232, 213)
-        self.colorlut['base3'] = (253, 246, 227)
+        colorlut['base2'] = (238, 232, 213)
+        colorlut['base3'] = (253, 246, 227)
 
         # Accent Colors
-        self.colorlut['yellow'] = (181, 137, 0)
-        self.colorlut['orange'] = (203, 75, 22)
-        self.colorlut['red'] = (220,  50, 47)
-        self.colorlut['magenta'] = (211,  54, 130)
-        self.colorlut['violet'] = (108, 113, 196)
-        self.colorlut['blue'] = (38, 139, 210)
-        self.colorlut['cyan'] = (42, 161, 152)
-        self.colorlut['green'] = (133, 153, 0)
-        self.colorlut['black'] = (0, 0, 0)
+        colorlut['yellow'] = (181, 137, 0)
+        colorlut['orange'] = (203, 75, 22)
+        colorlut['red'] = (220,  50, 47)
+        colorlut['magenta'] = (211,  54, 130)
+        colorlut['violet'] = (108, 113, 196)
+        colorlut['blue'] = (38, 139, 210)
+        colorlut['cyan'] = (42, 161, 152)
+        colorlut['green'] = (133, 153, 0)
+        colorlut['black'] = (0, 0, 0)
+        
+        return colorlut
 
 
     def setup_syntax_highlight_tokens(self):
