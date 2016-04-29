@@ -10,9 +10,9 @@ Handles controller events.
 
 from javax.swing import JFileChooser, JOptionPane, ToolTipManager
 from javax.swing.filechooser import FileNameExtensionFilter
-from java.io import FileWriter, IOException
 from java.lang import System, Integer
-import codecs, time, os
+from requests.exceptions import Timeout, ConnectionError, HTTPError
+import codecs, os
 
 from pyoracc.atf.atffile import AtfFile
 from ..view.NammuView import NammuView
@@ -140,13 +140,6 @@ class NammuController(object):
         return text
         # TODO: Check if selected file is ATF or at least text file!
 
-#        try:
-#          reader = FileReader(f)
-#          self.outer._editArea.read(reader, "")  # Use TextComponent read
-#        except IOException,ioex:
-#          System.out.println(e);
-#          System.exit(1);
-
 
     def saveFile(self, event):
         '''
@@ -178,13 +171,6 @@ class NammuController(object):
         f.close()
 
         # TODO return status?
-
-#       try:
-#         writer = FileWriter(f)
-#         self.outer._editArea.write(writer)  # TextComponent write
-#       except IOException,ioex:
-#         JOptionPane.showMessageDialog(self.outer, ioex)
-#         System.exit(1)
 
 
     def closeFile(self, event):
@@ -321,6 +307,7 @@ class NammuController(object):
         '''
         Connect to ORACC server and retrieved lemmatised version of ATF file.
         '''
+        print "lemmatising"
         self.log("NammuController: Lemmatising ATF file... \n")
 
         # Search for project name in file. If not found, don't validate
@@ -339,7 +326,7 @@ class NammuController(object):
         This method sends a command to the ORACC server along with all the
         necessary arguments to build the HTTP request.
         '''
-
+        print command
         # Build request.zip on the fly, pack all needed in it and send to server.
         url = 'http://oracc.museum.upenn.edu:8085'
 
@@ -358,41 +345,53 @@ class NammuController(object):
         client.send()
         server_id = client.get_response_id()
 
-        # Wait for server to prepare response
+        # Wait for server to prepare response and handle response
         self.log("        Request sent OK with ID " + server_id + "\n")
         self.log("        Waiting for server to prepare response... ")
-        ready = client.wait_for_response(server_id)
-        if ready:
-            self.log("OK\n")
-            self.log("        Fetching response... ")
 
-            # Send new request to fetch results and server logs
-            # This shouldn't need a new client, but a new request inside the same client
-            client = SOAPClient(url, method='POST')
-            client.create_request(keys=[server_id])
-            client.send()
-            response = client.get_response()
-            self.log(" OK\n")
-            self.log("        Reading response... ")
-            oracc_log, request_log, autolem = client.get_server_logs()
-            self.log(" OK\n")
+        try:
+            client.wait_for_response(server_id)
+        except Timeout:
+            self.log("        ORACC server timed out after 5 seconds.\n\n")
+            return
+        except ConnectionError:
+            self.log("        Can't connect to ORACC server.\n\n")
+            return
+        except HTTPError:
+            self.log("        ORACC server returned invalid HTTP response.\n\n")
+            return
+        except:
+            self.log("        Error when trying to access ORACC server.\n\n")
+            return
 
-            print "\n" + "*"*30
-            print self.currentFilename, oracc_log
-            print "*"*30 + "\n"
+        self.log("OK\n")
+        self.log("        Fetching response... ")
 
-            if autolem:
-                self.atfAreaController.setAtfAreaText(autolem)
-                self.log("        Lemmatised ATF received from server.\n")
+        # Send new request to fetch results and server logs
+        # This shouldn't need a new client, but a new request inside the same client
+        client = SOAPClient(url, method='POST')
+        client.create_request(keys=[server_id])
+        client.send()
+        response = client.get_response()
+        self.log(" OK\n")
+        self.log("        Reading response... ")
+        oracc_log, request_log, autolem = client.get_server_logs()
+        self.log(" OK\n")
 
-            if oracc_log:
-                validation_errors = self.get_validation_errors(oracc_log)
-                self.atfAreaController.view.error_highlight(validation_errors)
-                self.log("        See highlighted areas in the text for errors and check again.\n\n")
-            else:
-                self.log("        The ORACC server didn't report any validation errors.\n\n")
+        print "\n" + "*"*30
+        print self.currentFilename, oracc_log
+        print "*"*30 + "\n"
+
+        if autolem:
+            self.atfAreaController.setAtfAreaText(autolem)
+            self.log("        Lemmatised ATF received from server.\n")
+
+        if oracc_log:
+            validation_errors = self.get_validation_errors(oracc_log)
+            self.atfAreaController.view.error_highlight(validation_errors)
+            self.log("        See highlighted areas in the text for errors and check again.\n\n")
         else:
-            self.log("        The ORACC server returned and error status and can't validate now.\n\n")
+            self.log("        The ORACC server didn't report any validation errors.\n\n")
 
     def get_validation_errors(self, oracc_log):
         """
@@ -510,10 +509,10 @@ class NammuController(object):
         nammu_text = self.atfAreaController.getAtfAreaText()
 
         if project_str in nammu_text:
-            try:
-                parsed_atf = self.parse(nammu_text)
-                project = parsed_atf.text.project
-            except SyntaxError:
+            # try:
+            #     parsed_atf = self.parse(nammu_text)
+            #     project = parsed_atf.text.project
+            # except SyntaxError:
                 # File can't be parsed but might still contain a project code
                 project = nammu_text.split(project_str)[1].split()[0]
 

@@ -5,6 +5,7 @@ import StringIO
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
 import httplib as http_client
+from requests.exceptions import RequestException
 from HTTPRequest import HTTPRequest
 
 class SOAPClient(object):
@@ -59,16 +60,17 @@ class SOAPClient(object):
         """
         Check for a response to the request and obtain response zip file.
         """
+        url = "http://oracc.museum.upenn.edu/p/" + id
         while True:
-            url = "http://oracc.museum.upenn.edu/p/" + id
             try:
                 ready_response = requests.get(url, timeout=5)
-            except Timeout:
-                return False
+                print "response is " + ready_response.text
+            except RequestException:
+                raise
             if ready_response.text == "done\n":
-                return True
+                return
             if ready_response.text == "err_stat\n":
-                return False
+                raise Exception
 
     def get_response(self):
         return self.response.content
