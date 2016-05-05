@@ -22,8 +22,17 @@ class AtfAreaController(object):
 
 
     def setAtfAreaText(self, text):
+        '''
+        Need to manually make the edit compound start because the setText()
+        method triggers 2 consecutive INSERT events: one to set the text to "" 
+        and another to set the text to the given text.
+        Default behaviour of the compound edit would create a new edit for each
+        INSERT event, so we have to manually group those two together.
+        '''
+        self.view.edit_listener.compound()
         self.view.editArea.setText(text)
         self.view.syntax_highlight()
+        self.view.edit_listener.stop_compound()
         self.update_line_numbers()
 
 
@@ -33,8 +42,8 @@ class AtfAreaController(object):
 
     def clearAtfArea(self):
         self.view.editArea.setText("")
-        # Not sure we need this
-        # self.view.undo_manager.discardAllEdits()
+        # When opening a new file we should discard the previous edits
+        self.view.undo_manager.discardAllEdits()
 
 
     def update_line_numbers(self):
