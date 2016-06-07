@@ -1,0 +1,11 @@
+sudo: false
+
+language: java
+
+matrix:
+  include:
+    - jdk: oraclejdk8
+    - jdk: oraclejdk7
+
+script:
+  - mvn clean test 
